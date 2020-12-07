@@ -1,0 +1,24 @@
+version: '3.3'
+services: 
+  aspnetcore:
+    image: amadev/aspnetcore
+    container_name: amadev-aspnetcore
+    build: ./aspnetcore/
+    # depends_on:
+    #   - database
+    environment: 
+      - DOTNET_DB_HOST=database
+      - DOTNET_DB_USER=root
+      - DOTNET_DB_DATABASE=${MYSQL_DATABASE}
+      - DOTNET_DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - DOTNET_URLS=http://*:5000
+    ports: 
+      - "5000:5000"
+  database:
+    image: mysql:latest
+    container_name: amadev-mysql
+    environment: 
+      - MYSQL_PASSWORD
+      - MYSQL_ROOT_PASSWORD
+    volumes:
+      - ./db-data:/var/lib/mysql
