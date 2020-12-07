@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using SimpleWebApi.ApiParameters;
 using SimpleWebApi.Models;
 using SimpleWebApi.MySql;
@@ -13,12 +12,10 @@ namespace TTSGame.Controllers
     [Route("[controller]")]
     public class NotesController : Controller
     {
-        private readonly ILogger<NotesController> logger;
         private readonly MySqlDbContext dbContext;
 
-        public NotesController(ILogger<NotesController> logger, MySqlDbContext dbContext)
+        public NotesController(MySqlDbContext dbContext)
         {
-            this.logger = logger;
             this.dbContext = dbContext;
         }
 
@@ -38,8 +35,16 @@ namespace TTSGame.Controllers
         [HttpGet]
         public IEnumerable<Note> Get() => dbContext.Notes.ToList();
 
-        [HttpGet]
-        [Route("{id}")]
-        public async Task<Note> GetById(int id) => await dbContext.Notes.FindAsync(id);
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Note>> GetById(int id) {
+            var note = await dbContext.Notes.FindAsync(id);  
+
+            if (note is null)
+            {
+                return NotFound($"Note with id {id} not found!");
+            } 
+
+            return note;
+        }
     }
 }

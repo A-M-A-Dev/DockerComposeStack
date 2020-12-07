@@ -28,9 +28,6 @@ namespace SimpleWebApi.MySql
 
             modelBuilder.Entity<Note>(entity =>
             {
-                entity.Property(e => e.Id)
-                    .IsRequired()
-                    .HasMaxLength(8);
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Title)
                     .IsRequired()
