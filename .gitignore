@@ -9,3 +9,5 @@ db-data
 *.code-workspace
 
 # End of https://www.toptal.com/developers/gitignore/api/dotnetcore,vscode
+
+php/src/vendor

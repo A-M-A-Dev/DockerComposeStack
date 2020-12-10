@@ -28,3 +28,12 @@ services:
       - 10:80
     volumes:
       - ./php/src:/var/www/html/
+  composer:
+    image: composer:1.9
+    command: ["composer", "install"]
+    depends_on:
+      - php
+    volumes:
+      - ./php/src:/app
+  redis:
+    image: redis:latest
