@@ -20,6 +20,7 @@ services:
     volumes:
       - ./db-data:/var/lib/mysql
   php:
+    container_name: amadev-php
     build:
       context: ./php/
     depends_on:
@@ -36,4 +37,5 @@ services:
     volumes:
       - ./php/src:/app
   redis:
+    container_name: amadev-redis
     image: redis:latest
