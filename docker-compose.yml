@@ -12,8 +12,6 @@ services:
       - DOTNET_DB_DATABASE=amadev_database
       - DOTNET_DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - DOTNET_URLS=http://*
-    ports: 
-      - "5000:80"
   database:
     image: mysql:latest
     container_name: amadev-mysql
@@ -21,3 +19,12 @@ services:
       - MYSQL_ROOT_PASSWORD
     volumes:
       - ./db-data:/var/lib/mysql
+  php:
+    build:
+      context: ./php/
+    depends_on:
+      - aspnetcore
+    ports:
+      - 10:80
+    volumes:
+      - ./php/src:/var/www/html/
