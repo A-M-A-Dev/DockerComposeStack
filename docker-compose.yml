@@ -31,6 +31,7 @@ services:
     volumes:
       - ./php/src:/var/www/html/
   composer:
+    container_name: amadev-composer
     image: composer:1.9
     command: ["composer", "install"]
     depends_on:
