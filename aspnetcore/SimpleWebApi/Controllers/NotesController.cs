@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace TTSGame.Controllers
+namespace SimpleWebApi.Controllers
 {
     [ApiController]
     [Route("[controller]")]
@@ -14,11 +14,7 @@ namespace TTSGame.Controllers
     {
         private readonly MySqlDbContext dbContext;
 
-        public NotesController(MySqlDbContext dbContext)
-        {
-            this.dbContext = dbContext;
-        }
-
+        public NotesController(MySqlDbContext dbContext) => this.dbContext = dbContext;
 
         [HttpPost]
         public async Task Post([FromBody] NoteParameter parameter)
@@ -34,17 +30,5 @@ namespace TTSGame.Controllers
 
         [HttpGet]
         public IEnumerable<Note> Get() => dbContext.Notes.ToList();
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Note>> GetById(int id) {
-            var note = await dbContext.Notes.FindAsync(id);  
-
-            if (note is null)
-            {
-                return NotFound($"Note with id {id} not found!");
-            } 
-
-            return note;
-        }
     }
 }

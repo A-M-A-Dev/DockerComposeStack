@@ -25,6 +25,7 @@ services:
       context: ./php/
     depends_on:
       - aspnetcore
+      - redis
     ports:
       - 10:80
     volumes:
