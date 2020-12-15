@@ -73,6 +73,7 @@ docker-compose
 <h2>
   راه‌اندازی سرور
   Asp .Net Core
+  و اتصال آن به MySql
 </h2>
 
 قبل از شروع، باید
@@ -465,6 +466,485 @@ aspnetcore
 http://localhost:5000
 قابل دسترسیه.
 
+<h2>
+  راه‌اندازی سرور
+  PHP
+  و اتصال آن به سرور
+  Asp .Net Core
+  و
+  Redis
+</h2>
 
+در این قسمت می خوایم یک سرور
+PHP
+راه‌اندازی کنیم که درخواست رو از کاربر بگیره و از سرور
+ASP.NET Core
+مون اطلاعات رو دریافت کنه یا بهش اضافه کنه! در مرحله بعدی
+Cache
+رو با استفاده از
+Redis Server
+بهش اضافه می کنیم.
+
+در فایل
+docker-compose.yml
+خطوط زیر رو پاک میکنیم و می خواهیم از سرور
+PHP
+بهش
+Request
+بزنیم و نیازی نیست پورتی به بیرون داشته‌باشه.
+
+<div dir="ltr">
+  
+```yaml
+ports:
+     - "5000:80"
+```
+
+</div>
+
+همچنین باید کانفیگ‌های زیر رو برای سرور
+PHP
+اضافه کنیم:
+
+<div dir="ltr">
+  
+```yaml
+php:
+   build:
+      context: ./php/
+   depends_on:
+      - aspnetcore
+   ports:
+      - 10:80
+   volumes:
+      - ./php/src:/var/www/html/
+```
+
+</div>
+
+حالا باید
+`php:7.4-apache`
+رو به
+`Dockerfile`
+معرفی کنیم.
+
+یک فایل
+`htaccess.`
+درون پوشه
+`php`
+ایجاد می‌کنیم که وظیفش اینه که همه‌ی
+Request
+هایی که به این فولدر (و ساب‌فولدرها) میاد رو بده به
+`index.php`!
+
+محتوای فایل
+`htaccess.`
+به صورت زیر خواهد بود:
+
+<div dir="ltr">
+  
+```apacheconf
+RewriteEngine On
+ RewriteBase /
+ RewriteCond %{REQUEST_FILENAME} !-d
+ RewriteCond %{REQUEST_FILENAME} !-f
+ RewriteRule ^(.+)$ index.php [QSA,L]
+```
+
+</div>
+
+برای اینکه فایل
+`htaccess`
+مون بتونه کار کنه و
+Apache
+این اجازه رو بده ، توی
+Dockerfile
+مون دستور
+`RUN a2enmod rewrite`
+رو اضافه میکنیم.
+
+در نهایت محتوای `php/Dockerfile` به صورت زیر خواهد بود:
+
+<div dir="ltr">
+  
+```Dockerfile
+FROM php:7.4-apache
+RUN a2enmod rewrite
+```
+
+فایل
+`php/src/CurlHttp.php`
+یک فایل
+`php`
+هست که می تونه به سرورمون
+Http Request
+بزنه.
+
+محتوای این فایل به صورت زیر خواهد بود:
+
+<div dir="ltr">
+  
+```php
+<?php
+
+class CurlHttp
+{
+   private $base;
+   public function __construct($base)
+   { 
+       $this->base = $base;
+    }
+   public function request($type, $url, $params = [])
+    {
+       switch (strtoupper($type)) {
+           case "GET":
+               return $this->getReq($url, $params);
+               break;
+           case "POST":
+               return $this->postReq($url, $params);
+               break;
+           default:
+               throw new Exception("Undefined Request Type");
+        }
+    }
+   private function getReq($url, $params = [])
+   { 
+       $ch = curl_init($this->generateUrl($url));
+       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+       curl_setopt($ch, CURLOPT_HEADER, 0);
+       $response = curl_exec($ch);
+       curl_close($ch);
+
+       return $response;
+    }
+   private function postReq($url, $params = [])
+   {
+       $ch = curl_init($this->generateUrl($url));
+       curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params)); 
+       curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content- 
+                    Type:application/json'));
+       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+       curl_setopt($ch, CURLOPT_HEADER, 0);
+       $response = curl_exec($ch);
+       curl_close($ch);
+       return $response;
+    }
+   private function generateUrl($url)
+    {
+        return $this->base."/".$url;
+    }
+}
+```
+
+</div>
+
+فایل دیگری که ایجاد کردیم
+`Router.php`
+هست که برای مدیریت کردن
+Routing
+استفاده میشه و محتوای آن به صورت زیر خواهد بود:
+
+
+<div dir="ltr">
+  
+```php
+<?php
+
+class Router
+{
+    private $request;
+    private $supportedMethods = [ "GET", "POST"    ];
+    private $routes;
+    public function __construct($request)
+    {
+        $this->request = $request; $this->bootstrapRoutes();
+    }
+    public function get($url, $callback)
+    {
+        $this->routes['GET'][$url] = $callback;
+    }
+    public function post($url, $callback)
+    {
+        $this->routes['POST'][$url] = $callback;
+    }
+    public function resolve($url, $method)
+    {
+        header('Content-Type: application/json');
+        if (!isset($this->routes[strtoupper($method)])) {
+            echo json_encode("Unsupported Http Method");
+            return;
+        }
+        $callback = $this->routes[strtoupper($method)][$url] ?? null;
+        if (!$callback) {
+             echo json_encode("Unsupported Route");
+             return;
+        }
+        echo call_user_func_array($callback, [$this->request]);
+    }
+   private function bootstrapRoutes()
+    {
+         foreach ($this->supportedMethods as $method) {
+             $this->routes[$method] = [];
+         }
+    }
+}
+```
+
+</div>
+
+فایل دیگری که در گذشته نیز به آن اشاره کردیم
+`index.php`
+هست که
+Request
+ها رو دریافت می کنه و پارامترهایی که با
+json
+به آن ارسال شده رو می گیره و یک
+Router
+می سازه . بعد چک می کنیم که
+Request
+زده شده به
+`/notes`
+از نوع
+GET
+است یا
+POST.
+اگر از نوع
+GET
+بود یک
+instance
+از
+CurlHttp
+می‌سازیم
+base address
+مون هم
+aspnetcore
+قرار میدیم و در نهایت به
+aspnetcore
+مون یک
+Request
+از نوع
+GET
+می زنیم. اگر
+Request
+زده شده به 
+`/notes`
+از نوع
+POST
+باشه هم مانند
+`GET`
+عمل می کنیم با این تفاوت که
+PostData
+رو ست میکنیم و به
+aspnetcore
+مون
+Request
+از نوع
+POST
+می زنیم.
+
+توجه داریم که در این جا با استفاده از نام
+Container
+می تونیم
+Request
+مون رو ارسال کنیم و لزومی به داشتن
+IP
+نیست!
+
+در نهایت محتویات فایل
+`index.php`
+به صورت زیر خواهد بود:
+
+<div dir="ltr">
+  
+```php
+<?php
+include "CurlHttp.php"
+include "Router.php"
+define("ASP_CONTAINER", "aspnetcore");
+$url = $_SERVER['REQUEST_URI'];
+$request = json_decode(file_get_contents('php://input'), true);
+$router = new Router($request);
+$router->get('/notes', function ($request) {
+    $curl = new CurlHttp(ASP_CONTAINER);
+    return $curl->request('GET', 'notes');
+ });
+$router->post('/notes', function ($request) {
+    $curl = new CurlHttp(ASP_CONTAINER);
+    $postData = ['title' => $request['title'],'text'=> $request['text'], 
+    ];
+    return $curl->request('POST', 'notes', $postData);
+});
+$router->resolve($url, $_SERVER['REQUEST_METHOD']);
+```
+
+</div>
+
+<h3>
+  اضافه کردن سرور
+  Redis
+  و
+  Cache
+  کردن داده‌ها در سرور
+  PHP
+</h3>
+
+تو این بخش می خوایم
+Cache
+رو اضافه کنیم. برای استفاده از افزونه
+Redis
+عه
+php
+یعنی
+predis
+به
+Composer
+نیاز داریم. دستور
+`composer install`
+فایل
+`package.json`
+که در کنار فایل
+`php`
+قرار داره رو می خونه و
+`package`
+های مورد نیاز رو نصب میکنه. نکته قابل توجه اینه که پارامتر
+`depends-on`
+برابر
+`php`
+قرار گرفته چون اول باید کانتینر
+php
+اجرا بشه و بعد دستور
+`composer install`
+اجرا بشه!
+
+یک کانتینر هم برای سرور
+Redis
+اضافه می‌کنیم.
+
+بنابراین به محتوای فایل
+`docker-compose.yml`
+موارد زیر اضافه میشه:
+
+<div dir="ltr">
+
+```yaml
+php:
+  container_name: amadev-php
+  build:
+    context: ./php/
+  depends_on:
+    - aspnetcore
+    - redis
+  ports:
+    - 10:80
+  volumes:
+    - ./php/src:/var/www/html/
+composer:
+  container_name: amadev-composer
+  image: composer:1.9
+  command: ["composer", "install"]
+  depends_on:
+    - php
+  volumes:
+    - ./php/src:/app
+redis:
+  container_name: amadev-redis
+  image: redis:latest
+```
+
+</div>
+
+و اما فایل
+`index.php`:
+
+اول
+`predis`
+رو لود کردیم و یک
+`instance`
+از
+`Predis\Client`
+می گیریم. پارامتر
+`host`
+رو برابر
+`redis`
+قرار دادیم چون همونطور که گفته شد با داشتن نام کانتینر می‌تونیم بهش دسترسی داشته‌باشیم و. حالا برای شبیه سازی
+caching
+یک متغیر
+redisKey
+تعریف کردیم و یک مقدار پیش فرضی رو درونش قرار دادیم.
+
+<div dir="ltr">
+
+```php
+json_decode($redis->get($redisKey))
+```
+</div>
+
+اگر خروجی کد بالا
+Null
+باشه یعنی
+redisKey
+ست نشده و اون دیتا رو تو
+cache
+مون نداریمش (یا تا به حال ست نشده یا اینکه
+expire
+شده) بنابراین به مدت 30 ثانیه دیتا رو
+cache
+می‌کنیم.
+
+در نهایت محتوای فایل
+`index.php`
+به صورت زیر خواهد بود:
+
+<div dir="ltr">
+
+```php
+<?php
+include "CurlHttp.php"
+include "Router.php"
+include "vendor/predis/predis/autoload.php"
+
+define("ASP_CONTAINER", "aspnetcore");
+$url = $_SERVER['REQUEST_URI'];
+$request = json_decode(file_get_contents('php://input'), true);
+$router = new Router($request);
+
+$router->get('/notes', function ($request) {
+    $curl = new CurlHttp(ASP_CONTAINER);
+    $redis = new \Predis\Client([
+        'scheme' => 'tcp',
+        'host'   => 'redis',
+        'port'   => '6379',
+    ]);
+
+    $redisKey = 'notes-key';
+    $result = [
+        'from_cache' => true,
+        'data'       => json_decode($redis->get($redisKey)),
+    ];
+    if (!$result['data']) {
+        $data = $curl->request('GET', 'notes');
+        $result = [
+            'from_cache' => false,
+            'data'       => json_decode($data),
+        ];
+        $redis->set($redisKey, $data);
+        $redis->expire($redisKey, 30);
+    }
+    return json_encode($result);
+});
+
+$router->post('/notes', function ($request) {
+    $curl = new CurlHttp(ASP_CONTAINER);
+    $postData = [
+        'title' => $request['title'],
+        'text' => $request['text'],
+    ];
+    return $curl->request('POST', 'notes', $postData);
+});
+
+$router->resolve($url, $_SERVER['REQUEST_METHOD']);`
+```
+
+</div>
 
 </div>
