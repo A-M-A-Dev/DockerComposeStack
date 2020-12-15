@@ -62,10 +62,13 @@ docker
 docker-compose
 رو روی سیستم لینوکسی‌تون نصب کنید.
 
+<div dir="ltr">
+  
 ```Bash
 > curl -sSL https://get.docker.com/ | sh
 > sudo apt install docker-compose
 ```
+</div>
 
 <h2>
   راه‌اندازی سرور
@@ -86,12 +89,15 @@ Solution
 Web API
 بهش اضافه کنیم. این کار با استفاده از کامند زیر قابل انجامه:
 
+<div dir="ltr">
+  
 ```Bash
 > dotnet new sln -n SimpleWebApi -o aspnetcore
 > cd aspnetcore
 > dotnet new webapi -n SimpleWebApi -o SimpleWebApi
 > dotnet sln add SimpleWebApi
 ```
+</div>
 
 حالا فایل‌های پروژه ساخته شده و می‌تونیم سرور رو آماده کنیم. تو این سرور، می‌خوایم یک مدل
 Note
@@ -105,6 +111,8 @@ API
 `aspnetcore/SimpleWebApi/Models/Note.cs`
 می‌نویسیم.
 
+<div dir="ltr">
+  
 ```CSharp
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -119,6 +127,7 @@ namespace SimpleWebApi.Models
     }
 }
 ```
+</div>
 
 حالا باید برای این مدل،
 DbContext
@@ -128,12 +137,15 @@ MySql
 
 قبل از هر چیزی، باید پکیج‌های مورد نیاز رو به پروژه اضافه کنیم.
 
+<div dir="ltr">
+  
 ```Bash
 > dotnet add SimpleWebApi package MySql.Data
 > dotnet add SimpleWebApi package MySql.Data.EntityFrameworkCore
 > dotnet add SimpleWebApi package EntityFramework
 > dotnet add SimpleWebApi package Microsoft.EntityFrameworkCore.Tools
 ```
+</div>
 
 حالا
 DbContext
@@ -142,6 +154,8 @@ DbContext
 می‌نویسیم.
 
 
+<div dir="ltr">
+  
 ```CSharp
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -185,6 +199,7 @@ namespace SimpleWebApi.MySql
     }
 }
 ```
+</div>
 
 همونطور که می‌بینید، تو خط ۲۱ که
 connection string
@@ -204,6 +219,8 @@ Asp .Net Core
 `CreateHostBuilder`
 رو به صورت زیر تغییر میدیم.
 
+<div dir="ltr">
+  
 ```CSharp
 public static IHostBuilder CreateHostBuilder(string[] args) =>
 Host.CreateDefaultBuilder(args)
@@ -216,6 +233,7 @@ Host.CreateDefaultBuilder(args)
         webBuilder.UseStartup<Startup>();
     });
 ```
+</div>
 
 و بعد هم تو
 `Startup.cs`،
@@ -223,10 +241,13 @@ Host.CreateDefaultBuilder(args)
 `ConfigureServices`
 اضافه می‌کنیم.
 
+<div dir="ltr">
+  
 ```CSharp
 services.Configure<IConfiguration>(Configuration);
 services.AddDbContext<MySqlDbContext>();
 ```
+</div>
 
 و خط زیر رو هم از تابع
 `Configure`
@@ -236,9 +257,12 @@ request
 https
 نکنه.
 
+<div dir="ltr">
+  
 ```CSharp
 app.UseHttpsRedirection();
 ```
+</div>
 
 در قدم آخر هم، باید
 Api Controller
@@ -260,6 +284,8 @@ Note،
 DTO
 بنویسیم.
 
+<div dir="ltr">
+  
 ```CSharp
 namespace SimpleWebApi.ApiParameters
 {
@@ -270,11 +296,14 @@ namespace SimpleWebApi.ApiParameters
     }
 }
 ```
+</div>
 
 کنترلر رو هم باید تو مسیر
 `aspnetcore/SimpleWebApi/Controllers/NotesController.cs`
 بسازیم.
 
+<div dir="ltr">
+  
 ```CSharp
 using Microsoft.AspNetCore.Mvc;
 using SimpleWebApi.ApiParameters;
@@ -312,11 +341,14 @@ namespace SimpleWebApi.Controllers
     }
 }
 ```
+</div>
 
 همونطور که می‌بینید، دو تا
 API
 داریم که بصورت زیر میشه ازشون استفاده کرد.
 
+<div dir="ltr">
+  
 ```HTTP
 POST /notes
 {
@@ -326,6 +358,7 @@ POST /notes
 
 GET /notes
 ```
+</div>
 
 خب تبریک میگم. سرور
 Asp Net Core
@@ -335,6 +368,8 @@ Dockerfile
 `aspnetcore/Dockerfile`
 می‌سازیم.
 
+<div dir="ltr">
+  
 ```Dockerfile
 FROM mcr.microsoft.com/dotnet/sdk:3.1 AS build
 WORKDIR /app
@@ -354,6 +389,7 @@ WORKDIR /app
 COPY --from=build /app/SimpleWebApi/out ./
 ENTRYPOINT ["dotnet", "SimpleWebApi.dll"]
 ```
+</div>
 
 تو این فایل، اول فایل‌های
 `csproj`
@@ -373,6 +409,8 @@ AspNetCore
 
 </div>
 
+<div dir="ltr">
+  
 ```yaml
 version: '3.3'
 services:
@@ -398,6 +436,7 @@ services:
     volumes:
       - ./db-data:/var/lib/mysql
 ```
+</div>
 
 همونطور که می‌بینید، کانتینر
 aspnetcore
@@ -415,9 +454,12 @@ db-data
 
 حالا با ران کردن دستور زیر، کانتینرها شروع به کار می‌کنن و سرور راه‌اندازی میشه.
 
+<div dir="ltr">
+  
 ```Bash
 > sudo docker-compose up --build
 ```
+</div>
 
 از اونجایی که پورت
 aspnetcore
