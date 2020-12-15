@@ -407,8 +407,6 @@ MySql
 AspNetCore
 مون رو بهش اضافه کنیم.
 
-</div>
-
 <div dir="ltr">
   
 ```yaml
@@ -467,3 +465,6 @@ aspnetcore
 http://localhost:5000
 قابل دسترسیه.
 
+
+
+</div>
