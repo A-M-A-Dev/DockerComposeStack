@@ -6,6 +6,13 @@ MySql/Asp.Net Core/PHP/Redis
 توسط داکر
 </h1>
 
+<div align="center"><i>
+  نویسندگان:
+  <a href="https://github.com/ahmadsalimi">
+  احمد سلیمی
+  </a>
+</i></div>
+
 داکر یه پلتفرم متن‌باز برای توسعه
 (development)
 و استقرار
