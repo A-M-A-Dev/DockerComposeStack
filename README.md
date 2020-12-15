@@ -1,7 +1,10 @@
-# DockerComposeStack
+<div dir="rtl">
 
-## Build and Run
+<h1 align="center">
+راه‌اندازی استک نرم‌افزاری
+MySql/Asp.Net Core/PHP/Redis 
+توسط داکر
+</h1>
 
-```Bash
-docker-compose up --build
-```
+
+</div>
